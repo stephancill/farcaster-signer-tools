@@ -54,20 +54,22 @@ export default function Home() {
     // Group signers by requestFid
     return data?.signers.reduce(
       (acc, signer) => {
-        if (!acc.fidToSigner[signer.metadata.requestFid]) {
-          acc.fidToSigner[signer.metadata.requestFid.toString()] = [];
-        }
-        acc.fidToSigner[signer.metadata.requestFid.toString()].push(signer);
+        const fid = signer.metadata.requestFid.toString();
+        const signerKey = bytesToHex(signer.signerEventBody.key);
 
-        if (!acc.signerToFid[bytesToHex(signer.signerEventBody.key)]) {
-          acc.signerToFid[signer.metadata.requestFid.toString()] =
-            signer.metadata.requestFid.toString();
+        if (!acc.fidToSigner[fid]) {
+          acc.fidToSigner[fid] = [];
+        }
+        acc.fidToSigner[fid].push(signerKey);
+
+        if (!acc.signerToFid[signerKey]) {
+          acc.signerToFid[signerKey] = fid;
         }
 
         return acc;
       },
       { fidToSigner: {}, signerToFid: {} } as {
-        fidToSigner: Record<string, OnChainEvent[]>;
+        fidToSigner: Record<string, string[]>;
         signerToFid: Record<string, string>;
       }
     );
@@ -147,6 +149,7 @@ export default function Home() {
         if (!signersByFid) return acc;
 
         const fid = signersByFid.signerToFid[signer];
+        console.log(`signer: ${signer}, fid: ${fid}`);
         if (!acc[fid]) {
           acc[fid] = {
             casts: 0,
@@ -196,7 +199,10 @@ export default function Home() {
             <UserAccount data={data.signerProfiles[fid]} />
             <div>
               <div>{`${signers.length} signers`}</div>
-              {/* <div>{`${messageCountsByFid?.[fid].casts} casts, ${messageCountsByFid?.[fid].reactions} reactions, ${messageCountsByFid?.[fid].links} links, ${messageCountsByFid?.[fid].verifications} verifications`}</div> */}
+              {/* <pre>{JSON.stringify(messageCountsByFid?.[fid], null, 2)}</pre> */}
+              {messageCountsByFid?.[fid] && (
+                <div>{`${messageCountsByFid?.[fid].casts} casts, ${messageCountsByFid?.[fid].reactions} reactions, ${messageCountsByFid?.[fid].links} links, ${messageCountsByFid?.[fid].verifications} verifications`}</div>
+              )}
             </div>
           </div>
         ))}

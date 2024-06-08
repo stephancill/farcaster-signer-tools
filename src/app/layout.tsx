@@ -20,6 +20,7 @@ const queryClient = new QueryClient({
 
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
+  key: "FARCASTER_BACKFILL_CACHE",
 });
 
 export default function RootLayout({

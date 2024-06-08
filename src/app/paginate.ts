@@ -58,6 +58,8 @@ export async function getAllMessagesFromHubEndpoint({
 
     messages.push(...resMessages);
 
+    break;
+
     if (resMessages.length < MAX_PAGE_SIZE) {
       break;
     }
