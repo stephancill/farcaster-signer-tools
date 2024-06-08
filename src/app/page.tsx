@@ -1,113 +1,206 @@
-import Image from "next/image";
+"use client";
+
+import { Message, OnChainEvent, SignerOnChainEvent } from "@farcaster/hub-web";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { bytesToHex } from "viem";
+import { UserAccount } from "../components/UserData";
+import { getFullProfileFromHub } from "./utils";
 
 export default function Home() {
+  // Queries
+  const {
+    data: dataRaw,
+    isLoading,
+    error,
+    isError,
+  } = useQuery({
+    queryKey: ["profile", 1689],
+    queryFn: async () => getFullProfileFromHub(1689),
+  });
+
+  const data = useMemo(() => {
+    if (!dataRaw) return;
+    return {
+      ...dataRaw,
+      casts: dataRaw.casts.map((cast) => Message.fromJSON(cast)),
+      reactions: dataRaw.reactions.map((reaction) =>
+        Message.fromJSON(reaction)
+      ),
+      links: dataRaw.links.map((link) => Message.fromJSON(link)),
+      verifications: dataRaw.verifications.map((verification) =>
+        Message.fromJSON(verification)
+      ),
+      userData: dataRaw.userData.map((userData) => Message.fromJSON(userData)),
+      signers: dataRaw.signers.map((signer) => {
+        const { metadata, ...event } = signer as any;
+        const eventDecoded = OnChainEvent.fromJSON(
+          event
+        ) as unknown as SignerOnChainEvent;
+        return {
+          ...eventDecoded,
+          metadata: metadata as {
+            requestFid: number;
+            requestSigner: string;
+            signature: string;
+            deadline: number;
+          },
+        };
+      }),
+    };
+  }, [dataRaw]);
+
+  const signersByFid = useMemo(() => {
+    // Group signers by requestFid
+    return data?.signers.reduce(
+      (acc, signer) => {
+        if (!acc.fidToSigner[signer.metadata.requestFid]) {
+          acc.fidToSigner[signer.metadata.requestFid.toString()] = [];
+        }
+        acc.fidToSigner[signer.metadata.requestFid.toString()].push(signer);
+
+        if (!acc.signerToFid[bytesToHex(signer.signerEventBody.key)]) {
+          acc.signerToFid[signer.metadata.requestFid.toString()] =
+            signer.metadata.requestFid.toString();
+        }
+
+        return acc;
+      },
+      { fidToSigner: {}, signerToFid: {} } as {
+        fidToSigner: Record<string, OnChainEvent[]>;
+        signerToFid: Record<string, string>;
+      }
+    );
+  }, [data]);
+
+  const messagesBySigner = useMemo(() => {
+    if (!data) return;
+
+    const messages = {} as Record<
+      string,
+      Omit<typeof data, "signerProfiles" | "signers" | "userDataAggregated">
+    >;
+    data.casts.map((cast) => {
+      const signer = bytesToHex(cast.signer);
+      if (!messages[signer]) {
+        messages[signer] = {
+          casts: [],
+          reactions: [],
+          links: [],
+          verifications: [],
+          userData: [],
+        };
+      }
+      messages[signer].casts.push(cast);
+    });
+
+    data.reactions.map((reaction) => {
+      const signer = bytesToHex(reaction.signer);
+      if (!messages[signer]) {
+        messages[signer] = {
+          casts: [],
+          reactions: [],
+          links: [],
+          verifications: [],
+          userData: [],
+        };
+      }
+      messages[signer].reactions.push(reaction);
+    });
+
+    data.links.map((link) => {
+      const signer = bytesToHex(link.signer);
+      if (!messages[signer]) {
+        messages[signer] = {
+          casts: [],
+          reactions: [],
+          links: [],
+          verifications: [],
+          userData: [],
+        };
+      }
+      messages[signer].links.push(link);
+    });
+
+    data.verifications.map((verification) => {
+      const signer = bytesToHex(verification.signer);
+      if (!messages[signer]) {
+        messages[signer] = {
+          casts: [],
+          reactions: [],
+          links: [],
+          verifications: [],
+          userData: [],
+        };
+      }
+      messages[signer].verifications.push(verification);
+    });
+
+    return messages;
+  }, [data]);
+
+  const messageCountsByFid = useMemo(() => {
+    if (!messagesBySigner) return;
+
+    return Object.entries(messagesBySigner).reduce(
+      (acc, [signer, messages]) => {
+        if (!signersByFid) return acc;
+
+        const fid = signersByFid.signerToFid[signer];
+        if (!acc[fid]) {
+          acc[fid] = {
+            casts: 0,
+            reactions: 0,
+            links: 0,
+            verifications: 0,
+          };
+        }
+        acc[fid].casts += messages.casts.length;
+        acc[fid].reactions += messages.reactions.length;
+        acc[fid].links += messages.links.length;
+        acc[fid].verifications += messages.verifications.length;
+
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          casts: number;
+          reactions: number;
+          links: number;
+          verifications: number;
+        }
+      >
+    );
+  }, [messagesBySigner]);
+
+  if (isLoading)
+    return <div>{process.env.NEXT_PUBLIC_HUB_REST_URL} Loading...</div>;
+
+  if (isError || !data || !signersByFid)
+    return (
+      <div>Error {error instanceof Error && error.message + error.stack}</div>
+    );
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <UserAccount data={data.userDataAggregated} />
+        <div>
+          {`${data.casts.length} casts, ${data.reactions.length} reactions, ${data.links.length} links, ${data.signers.length} signers, ${data.verifications.length} verifications`}
         </div>
       </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+      <div className="space-y-4">
+        {Object.entries(signersByFid.fidToSigner).map(([fid, signers], i) => (
+          <div key={fid}>
+            <UserAccount data={data.signerProfiles[fid]} />
+            <div>
+              <div>{`${signers.length} signers`}</div>
+              {/* <div>{`${messageCountsByFid?.[fid].casts} casts, ${messageCountsByFid?.[fid].reactions} reactions, ${messageCountsByFid?.[fid].links} links, ${messageCountsByFid?.[fid].verifications} verifications`}</div> */}
+            </div>
+          </div>
+        ))}
       </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   );
 }
