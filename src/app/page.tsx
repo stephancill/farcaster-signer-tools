@@ -4,7 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { AppDetail } from "../components/AppDetail";
 import { UserDataView } from "../components/UserDataView";
-import { useBackfillData } from "../context/backfillContext";
+import {
+  DataMessages,
+  decodeJsonData,
+  useBackfillData,
+} from "../context/backfillContext";
 import {
   getFullProfileFromHub,
   getFullTime,
@@ -13,6 +17,9 @@ import {
 } from "./utils";
 import { twMerge } from "tailwind-merge";
 import { border } from "../style/common";
+import { ActionButton } from "../components/ActionButton";
+import { BackButton } from "../components/BackButton";
+import { ConnectKitButton } from "connectkit";
 
 export default function Home() {
   const [appFid, setAppFid] = useState<string | null>(null);
@@ -34,6 +41,8 @@ export default function Home() {
     lastUsedByFid,
     isLoading: processingIsLoading,
   } = useBackfillData(dataRaw);
+
+  const [importedData, setImportedData] = useState<DataMessages | null>(null);
 
   const fidToSignerSorted = useMemo(() => {
     if (!signersByFid) return;
@@ -62,9 +71,54 @@ export default function Home() {
       <div className="space-y-2">
         <UserDataView data={data.userDataAggregated} />
         <div className="text-gray-500">{signerMessagesToString(data)}</div>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            id="file"
+            ref={inputFile}
+            style={{ display: "none" }}
+            accept="application/json"
+            onChange={(e) => {
+              const files = e.target?.files;
+              if (files && files[0]) {
+                const file = files[0];
+                var reader = new FileReader();
+                reader.readAsText(file, "UTF-8");
+                reader.onload = function (evt) {
+                  if (evt.target?.result) {
+                    if (typeof evt.target.result === "string") {
+                      const json = JSON.parse(evt.target.result);
+                      setImportedData(decodeJsonData(json));
+                    }
+                  }
+                };
+                reader.onerror = function (evt) {
+                  console.error(`Error loading file`);
+                  alert("Error loading file");
+                };
+              }
+            }}
+          />
+          <ActionButton onClick={() => inputFile.current?.click()}>
+            Import
+          </ActionButton>
+          <ConnectKitButton></ConnectKitButton>
+        </div>
       </div>
 
-      {appFid ? (
+      {importedData ? (
+        <div>
+          <BackButton
+            onBack={() => {
+              setImportedData(null);
+            }}
+          />
+          <div>Imported signer</div>
+          <div className="text-gray-500">
+            {signerMessagesToString(importedData)}
+          </div>
+        </div>
+      ) : appFid ? (
         <div>
           <AppDetail fid={appFid} onBack={() => setAppFid(null)}></AppDetail>
         </div>

@@ -10,14 +10,20 @@
   },
   "dependencies": {
     "@farcaster/hub-web": "^0.8.9",
+    "@rainbow-me/rainbowkit": "^2.1.2",
     "@tanstack/query-sync-storage-persister": "^5.40.0",
     "@tanstack/react-query": "^5.40.1",
     "@tanstack/react-query-persist-client": "^5.40.1",
+    "connectkit": "^1.8.0",
+    "encoding": "^0.1.13",
     "next": "14.2.3",
+    "pino-pretty": "^11.1.0",
     "react": "^18",
     "react-dom": "^18",
+    "react-modal": "^3.16.1",
     "tailwind-merge": "^2.3.0",
-    "viem": "^2.13.7"
+    "viem": "^2.13.7",
+    "wagmi": "^2.9.10"
   },
   "devDependencies": {
     "@types/node": "^20",

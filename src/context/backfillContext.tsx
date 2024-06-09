@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { bytesToHex } from "viem";
 import { farcasterTimeToDate, getFullProfileFromHub } from "../app/utils";
 
-type BackfillContextType = {
+export type BackfillContextType = {
   /** Decode JSON data to `Message`/`OnChainEvent` objects */
   data?: ReturnType<typeof decodeJsonData>;
   /** Signers grouped by `requestFid` */
@@ -19,6 +19,15 @@ type BackfillContextType = {
   setDataRaw: (data: any) => void;
   /** Loading indicator status */
   isLoading: boolean;
+};
+
+export type DataMessages = Omit<
+  ReturnType<typeof decodeJsonData>,
+  "signerProfiles" | "signers" | "userDataAggregated"
+>;
+export type SignerMessagesType = DataMessages & {
+  lastUsed?: Date;
+  createdAt?: Date;
 };
 
 export const BackfillContext = createContext<BackfillContextType | null>(null);
@@ -97,7 +106,7 @@ export function useBackfillData(
   return context;
 }
 
-function decodeJsonData(
+export function decodeJsonData(
   dataRaw: Awaited<ReturnType<typeof getFullProfileFromHub>>
 ) {
   return {
@@ -111,7 +120,7 @@ function decodeJsonData(
       Message.fromJSON(verification)
     ),
     userData: dataRaw.userData.map((userData) => Message.fromJSON(userData)),
-    signers: dataRaw.signers.map((signer) => {
+    signers: dataRaw.signers?.map((signer) => {
       const { metadata, ...event } = signer as any;
       const eventDecoded = OnChainEvent.fromJSON(
         event

@@ -12,6 +12,8 @@ import { SignerDetail } from "./SignerDetail";
 import { BackButton } from "./BackButton";
 import { twMerge } from "tailwind-merge";
 import { border } from "../style/common";
+import { ActionButton } from "./ActionButton";
+import { useSendTransaction } from "wagmi";
 
 export function AppDetail({
   fid,
@@ -22,6 +24,8 @@ export function AppDetail({
 }) {
   const [selectedSigner, setSelectedSigner] = useState<string | null>(null);
   const { data, messagesBySigner, signersByFid } = useBackfillData();
+
+  const { data: hash, sendTransaction } = useSendTransaction();
 
   function handleBackup(signer: string) {
     try {
@@ -109,12 +113,11 @@ export function AppDetail({
         </div>
       ) : (
         <div>
-          <button
-            className="p-2 border border-black mb-4"
-            onClick={() => handleBackupAll()}
-          >
-            Backup All
-          </button>{" "}
+          <div className="flex gap-2 mb-4">
+            <ActionButton onClick={() => handleBackupAll()}>
+              Consolidate & Backup All
+            </ActionButton>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {signersByFid?.fidToSigner?.[fid]
               .sort(

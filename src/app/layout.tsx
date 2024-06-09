@@ -1,16 +1,20 @@
 "use client";
 
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 
-import "./globals.css";
-import { LOCALSTORAGE_KEYS } from "./const";
+import { ConnectKitProvider, getDefaultConfig } from "connectkit";
+import { WagmiProvider, createConfig } from "wagmi";
+import { optimism } from "wagmi/chains";
 import { BackfillContextProvider } from "../context/backfillContext";
-// export const metadata: Metadata = {
-//   title: "Farcaster Signer Migration",
-//   description: "Easily migrate/backup messages from your farcaster account.",
-// };
+import "./globals.css";
+
+const config = createConfig(
+  getDefaultConfig({
+    chains: [optimism],
+    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
+    appName: "Farcaster Signer Manager",
+  })
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,11 +24,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// const persister = createSyncStoragePersister({
-//   storage: window.localStorage,
-//   key: LOCALSTORAGE_KEYS.BACKFILL_CACHE,
-// });
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,16 +31,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      {/* <PersistQueryClientProvider
-        client={queryClient}
-        persistOptions={{ persister }}
-      > */}
-      <QueryClientProvider client={queryClient}>
-        <BackfillContextProvider>
-          <body className="p-2 md:p-10">{children}</body>
-        </BackfillContextProvider>
-      </QueryClientProvider>
-      {/* </PersistQueryClientProvider> */}
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <ConnectKitProvider>
+            <BackfillContextProvider>
+              <body className="p-2 md:p-10">{children}</body>
+            </BackfillContextProvider>
+          </ConnectKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
     </html>
   );
 }
