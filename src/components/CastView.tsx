@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 import { bytesToHex } from "viem";
 import { border } from "../style/common";
 import {
+  castIdToUrl,
   farcasterTimeToDate,
   getFullTime,
   timeAgo,
@@ -42,13 +43,21 @@ export function CastView({
       )}
     >
       {cast.data.castAddBody.parentCastId && (
-        <div className="text-gray-500">
-          Replying to{" "}
-          {truncateAddress(bytesToHex(cast.data.castAddBody.parentCastId.hash))}{" "}
-          by @!{cast.data.castAddBody.parentCastId.fid}
+        <div>
+          <a
+            target="_blank"
+            href={castIdToUrl(cast.data.castAddBody.parentCastId)}
+            className="text-gray-500 hover:underline"
+          >
+            Replying to{" "}
+            {truncateAddress(
+              bytesToHex(cast.data.castAddBody.parentCastId.hash)
+            )}{" "}
+            by @!{cast.data.castAddBody.parentCastId.fid}
+          </a>
         </div>
       )}
-      <div>
+      <div className="break-words">
         {splitAndInsert(
           cast.data.castAddBody.text,
           cast.data.castAddBody.mentionsPositions,
@@ -80,11 +89,22 @@ export function CastView({
             )}
           </div>
         ))}
-      <div
-        className="mt-auto text-gray-500"
-        title={getFullTime(farcasterTimeToDate(cast.data.timestamp))}
-      >
-        {timeAgo(farcasterTimeToDate(cast.data.timestamp))} ago
+      <div className="flex mt-auto ">
+        <div
+          className="text-gray-500"
+          title={getFullTime(farcasterTimeToDate(cast.data.timestamp))}
+        >
+          {timeAgo(farcasterTimeToDate(cast.data.timestamp))} ago
+        </div>
+        <div className="ml-auto">
+          <a
+            target="_blank"
+            href={castIdToUrl({ fid: cast.data.fid, hash: cast.hash })}
+            className="text-gray-500 hover:underline"
+          >
+            Link
+          </a>
+        </div>
       </div>
     </div>
   );

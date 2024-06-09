@@ -1,7 +1,7 @@
 import { FidRequest, OnChainEvent, SignerEventType } from "@farcaster/hub-web";
 
 import { bytesToHex, decodeAbiParameters } from "viem";
-import { MAX_PAGE_SIZE } from "./utils";
+import { MAX_PAGE_SIZE, transformHashReverse } from "./utils";
 
 export const signedKeyRequestAbi = [
   {
@@ -56,10 +56,15 @@ export async function getAllMessagesFromHubEndpoint({
 
     nextPageToken = _nextPageToken;
 
-    messages.push(...resMessages);
+    const transformedMessages = resMessages.map(transformHashReverse);
+
+    messages.push(...transformedMessages);
 
     // Only fetch one page in development
-    if (process.env.NEXT_PUBLIC_NODE_ENV === "development") break;
+    if (process.env.NEXT_PUBLIC_NODE_ENV === "development") {
+      console.log(`Breaking after fetching one page from ${url}`);
+      break;
+    }
 
     if (resMessages.length < MAX_PAGE_SIZE) {
       break;
@@ -121,7 +126,9 @@ export async function getAllSignersByFid(fid: FidRequest) {
 
     nextPageToken = _nextPageToken;
 
-    for (const signerJson of resEvents) {
+    const transformedEvents = resEvents.map(transformHashReverse);
+
+    for (const signerJson of transformedEvents) {
       const signer = OnChainEvent.fromJSON(signerJson);
       const body = signer.signerEventBody;
       const timestamp = new Date(signer.blockTimestamp * 1000);

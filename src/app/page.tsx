@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { AppDetail } from "../components/AppDetail";
-import { UserAccount } from "../components/UserData";
+import { UserDataView } from "../components/UserDataView";
 import { useBackfillData } from "../context/backfillContext";
 import {
   getFullProfileFromHub,
@@ -51,15 +51,16 @@ export default function Home() {
 
   if (processingIsLoading) return <div>Processing...</div>;
 
-  if (isError || !data || !signersByFid || !fidToSignerSorted)
+  if (isError || !data || !signersByFid || !fidToSignerSorted) {
     return (
       <div>Error {error instanceof Error && error.message + error.stack}</div>
     );
+  }
 
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <UserAccount data={data.userDataAggregated} />
+        <UserDataView data={data.userDataAggregated} />
         <div className="text-gray-500">{signerMessagesToString(data)}</div>
       </div>
 
@@ -78,7 +79,7 @@ export default function Home() {
                 )}
                 onClick={() => setAppFid(fid)}
               >
-                <UserAccount data={data.signerProfiles[fid]} />
+                <UserDataView data={data.signerProfiles[fid]} />
                 <div>
                   {messageCountsByFid?.[fid] && (
                     <div>

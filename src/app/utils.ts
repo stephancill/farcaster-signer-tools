@@ -1,10 +1,13 @@
 import {
+  CastId,
   FidRequest,
   Message,
   UserDataType,
+  base58ToBytes,
   fromFarcasterTime,
   isUserDataAddMessage,
 } from "@farcaster/hub-web";
+import { bytesToHex } from "viem";
 import {
   getAllCastsByFid,
   getAllLinksByFid,
@@ -50,7 +53,7 @@ export async function getFullProfileFromHub(_fid: number) {
     signerProfiles[signerFid.toString()] = await getUserData(signerFid);
   }
 
-  return {
+  const result = {
     casts: await getAllCastsByFid(fid),
     reactions: await getAllReactionsByFid(fid),
     links: await getAllLinksByFid(fid),
@@ -60,6 +63,8 @@ export async function getFullProfileFromHub(_fid: number) {
     signers,
     signerProfiles,
   };
+
+  return result;
 }
 
 function aggregateUserData(messagesJson: unknown[]) {
@@ -161,4 +166,99 @@ export function truncateAddress(address: string) {
 
 export function signerMessagesToString(obj: any) {
   return `${obj.casts.length.toLocaleString()} casts • ${obj.reactions.length.toLocaleString()} reactions • ${obj.links.length.toLocaleString()} links • ${obj.verifications.length.toLocaleString()} verifications`;
+}
+
+export function castIdToUrl({ hash }: CastId) {
+  return `https://warpcast.com/~/conversations/${bytesToHex(hash)}`;
+}
+
+export function downloadJsonFile(filename: string, data: any) {
+  const blob = new Blob([JSON.stringify(data)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+/**
+ * The protobuf format specifies encoding bytes as base64 strings, but we want to return hex strings
+ * to be consistent with the rest of the API, so we need to convert the base64 strings to hex strings
+ * before returning them.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+export function transformHashReverse(objRaw: any): any {
+  const obj = structuredClone(objRaw);
+  // Map of current key names to old key names that we want to preserve for backwards compatibility reasons
+  // If you are renaming a protobuf field, add the current name as the key, and the old name as the value, and we
+  // will copy the contents of the current field to the old field
+  const BACKWARDS_COMPATIBILITY_MAP: Record<string, string> = {
+    verificationAddAddressBody: "verificationAddEthAddressBody",
+    claimSignature: "ethSignature",
+  };
+
+  if (obj === null || typeof obj !== "object") {
+    return obj;
+  }
+
+  // These are the target keys that are base64 encoded, which should be converted to hex
+  const toHexKeys = [
+    "hash",
+    "signer",
+    "transactionHash",
+    "key",
+    "owner",
+    "to",
+    "from",
+    "recoveryAddress",
+  ];
+
+  // Convert these target keys to strings
+  const toStringKeys = ["name"];
+
+  const toHexOrBase58Keys = ["address", "blockHash"];
+
+  for (const key in obj) {
+    // biome-ignore lint/suspicious/noPrototypeBuiltins: <explanation>
+    if (obj.hasOwnProperty(key)) {
+      if (toHexKeys.includes(key) && typeof obj[key] === "string") {
+        // obj[key] = convertB64ToHex(obj[key]);
+        // Reverse: convert hex to base64
+        obj[key] = Buffer.from(obj[key].slice(2), "hex").toString("base64");
+      } else if (toStringKeys.includes(key) && typeof obj[key] === "string") {
+        // obj[key] = Buffer.from(obj[key], "base64").toString("utf-8");
+        // Reverse: convert string to base64
+        obj[key] = Buffer.from(obj[key]).toString("base64");
+      } else if (
+        toHexOrBase58Keys.includes(key) &&
+        typeof obj[key] === "string"
+      ) {
+        // We need to convert solana related bytes to base58
+        if (obj["protocol"] === "PROTOCOL_SOLANA") {
+          // obj[key] = convertB64ToB58(obj[key]);
+          // Reverse: convert base58 to base64
+          obj[key] = Buffer.from(
+            base58ToBytes(obj[key]).unwrapOr(new Uint8Array())
+          ).toString("base64");
+        } else {
+          // obj[key] = convertB64ToHex(obj[key]);
+          // Reverse: convert hex to base64
+          obj[key] = Buffer.from(obj[key].slice(2), "hex").toString("base64");
+        }
+      } else if (typeof obj[key] === "object") {
+        obj[key] = transformHashReverse(obj[key]);
+      }
+
+      const backwardsCompatibleName = BACKWARDS_COMPATIBILITY_MAP[key];
+      if (backwardsCompatibleName) {
+        obj[backwardsCompatibleName] = obj[key];
+      }
+    }
+  }
+
+  return obj;
 }

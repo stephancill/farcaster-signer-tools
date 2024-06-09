@@ -41,7 +41,6 @@ export function BackfillContextProvider({
     messageCountsByFid,
     lastUsedByFid,
   } = useMemo(() => {
-    console.log(`Decode JSON data`);
     if (!dataRaw) return {} as BackfillContextType;
     setIsLoading(true);
     const data = decodeJsonData(dataRaw);

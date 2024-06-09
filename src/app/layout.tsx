@@ -1,7 +1,7 @@
 "use client";
 
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 
 import "./globals.css";
@@ -20,10 +20,10 @@ const queryClient = new QueryClient({
   },
 });
 
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: LOCALSTORAGE_KEYS.BACKFILL_CACHE,
-});
+// const persister = createSyncStoragePersister({
+//   storage: window.localStorage,
+//   key: LOCALSTORAGE_KEYS.BACKFILL_CACHE,
+// });
 
 export default function RootLayout({
   children,
@@ -32,14 +32,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <PersistQueryClientProvider
+      {/* <PersistQueryClientProvider
         client={queryClient}
         persistOptions={{ persister }}
-      >
+      > */}
+      <QueryClientProvider client={queryClient}>
         <BackfillContextProvider>
           <body className="p-2 md:p-10">{children}</body>
         </BackfillContextProvider>
-      </PersistQueryClientProvider>
+      </QueryClientProvider>
+      {/* </PersistQueryClientProvider> */}
     </html>
   );
 }

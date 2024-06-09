@@ -1,7 +1,12 @@
 import { Message, UserDataType } from "@farcaster/hub-web";
 import { useBackfillData } from "../context/backfillContext";
-import { UserAccount } from "./UserData";
-import { signerMessagesToString, timeAgo, truncateAddress } from "../app/utils";
+import { UserDataView } from "./UserDataView";
+import {
+  downloadJsonFile,
+  signerMessagesToString,
+  timeAgo,
+  truncateAddress,
+} from "../app/utils";
 import { useState } from "react";
 import { SignerDetail } from "./SignerDetail";
 import { BackButton } from "./BackButton";
@@ -39,32 +44,62 @@ export function AppDetail({
         messagesJson[key] = messages[key].map((m) => Message.toJSON(m));
       }
 
-      const blob = new Blob([JSON.stringify(messagesJson)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `fsm-backup-${
+      downloadJsonFile(
+        `fsm-backup-${new Date().toISOString()}-${
           data?.signerProfiles[fid][UserDataType.USERNAME]
-        }-${signer}-${new Date().toISOString()}.json`
+        }-${signer}.json`,
+        messagesJson
       );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
     } catch (error) {
       console.error(error);
+      alert("Error backing up messages");
+    }
+  }
+
+  function handleBackupAll() {
+    try {
+      const allMessagesJson = {} as Record<string, unknown[]>;
+
+      for (const signer of signersByFid?.fidToSigner?.[fid] || []) {
+        const messages = messagesBySigner?.[signer];
+
+        if (!messages) {
+          console.error("No messages found for signer", signer);
+          continue;
+        }
+
+        for (const key of [
+          "casts",
+          "reactions",
+          "links",
+          "verifications",
+          "userData",
+        ] as const) {
+          allMessagesJson[key] = [
+            ...(allMessagesJson[key] || []),
+            ...messages[key].map((m) => Message.toJSON(m)),
+          ];
+        }
+      }
+
+      downloadJsonFile(
+        `fsm-backup-${new Date().toISOString()}-${
+          data?.signerProfiles[fid][UserDataType.USERNAME]
+        }-all.json`,
+        allMessagesJson
+      );
+    } catch (error) {
+      console.error(error);
+      alert("Error backing up messages");
     }
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <BackButton onBack={onBack} />
-      <UserAccount data={data!.signerProfiles[fid]} />
+      <UserDataView data={data!.signerProfiles[fid]} />
       {selectedSigner ? (
-        <div className="ml-10">
+        <div className="md:ml-10">
           <SignerDetail
             appFid={fid}
             signer={selectedSigner}
@@ -73,24 +108,32 @@ export function AppDetail({
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {signersByFid?.fidToSigner?.[fid]
-            .sort(
-              (signerA, signerB) =>
-                (
-                  messagesBySigner?.[signerB]?.lastUsed || new Date(0)
-                ).getTime() -
-                (messagesBySigner?.[signerA]?.lastUsed || new Date(0)).getTime()
-            )
-            .map((signer) => (
-              <button
-                key={signer}
-                className={twMerge("text-left p-2", border)}
-                onClick={() => setSelectedSigner(signer)}
-              >
-                <pre className="mb-2">{truncateAddress(signer)}</pre>
-                <div>
-                  <div>
+        <div>
+          <button
+            className="p-2 border border-black mb-4"
+            onClick={() => handleBackupAll()}
+          >
+            Backup All
+          </button>{" "}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {signersByFid?.fidToSigner?.[fid]
+              .sort(
+                (signerA, signerB) =>
+                  (
+                    messagesBySigner?.[signerB]?.lastUsed || new Date(0)
+                  ).getTime() -
+                  (
+                    messagesBySigner?.[signerA]?.lastUsed || new Date(0)
+                  ).getTime()
+              )
+              .map((signer) => (
+                <button
+                  key={signer}
+                  className={twMerge("text-left p-2 space-y-2", border)}
+                  onClick={() => setSelectedSigner(signer)}
+                >
+                  <pre className="mb-2">{truncateAddress(signer)}</pre>
+                  <div className="text-gray-500">
                     {signerMessagesToString(messagesBySigner?.[signer])}
                   </div>
                   <div className="flex flex-col">
@@ -111,16 +154,9 @@ export function AppDetail({
                         : "(this shouldn't happen)"}
                     </div>
                   </div>
-
-                  <button
-                    className="p-2 border border-black"
-                    onClick={() => handleBackup(signer)}
-                  >
-                    Backup
-                  </button>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
+          </div>
         </div>
       )}
     </div>

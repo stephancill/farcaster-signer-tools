@@ -1,7 +1,7 @@
 import { UserDataType } from "@farcaster/hub-web";
 import { UserDataAggType } from "../app/utils";
 
-export function UserAccount({ data }: { data: UserDataAggType }) {
+export function UserDataView({ data }: { data: UserDataAggType }) {
   return (
     <div className="flex gap-3">
       <img
