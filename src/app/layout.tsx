@@ -5,6 +5,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 
 import "./globals.css";
+import { LOCALSTORAGE_KEYS } from "./const";
+import { BackfillContextProvider } from "../context/backfillContext";
 // export const metadata: Metadata = {
 //   title: "Farcaster Signer Migration",
 //   description: "Easily migrate/backup messages from your farcaster account.",
@@ -20,7 +22,7 @@ const queryClient = new QueryClient({
 
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: "FARCASTER_BACKFILL_CACHE",
+  key: LOCALSTORAGE_KEYS.BACKFILL_CACHE,
 });
 
 export default function RootLayout({
@@ -34,7 +36,9 @@ export default function RootLayout({
         client={queryClient}
         persistOptions={{ persister }}
       >
-        <body>{children}</body>
+        <BackfillContextProvider>
+          <body className="p-2 md:p-10">{children}</body>
+        </BackfillContextProvider>
       </PersistQueryClientProvider>
     </html>
   );

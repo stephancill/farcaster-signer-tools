@@ -1,17 +1,25 @@
 "use client";
 
-import { Message, OnChainEvent, SignerOnChainEvent } from "@farcaster/hub-web";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { bytesToHex } from "viem";
+import { useMemo, useRef, useState } from "react";
+import { AppDetail } from "../components/AppDetail";
 import { UserAccount } from "../components/UserData";
-import { getFullProfileFromHub } from "./utils";
+import { useBackfillData } from "../context/backfillContext";
+import {
+  getFullProfileFromHub,
+  getFullTime,
+  signerMessagesToString,
+  timeAgo,
+} from "./utils";
+import { twMerge } from "tailwind-merge";
+import { border } from "../style/common";
 
 export default function Home() {
-  // Queries
+  const [appFid, setAppFid] = useState<string | null>(null);
+
   const {
     data: dataRaw,
-    isLoading,
+    isLoading: queryIsLoading,
     error,
     isError,
   } = useQuery({
@@ -19,168 +27,31 @@ export default function Home() {
     queryFn: async () => getFullProfileFromHub(1689),
   });
 
-  const data = useMemo(() => {
-    if (!dataRaw) return;
-    return {
-      ...dataRaw,
-      casts: dataRaw.casts.map((cast) => Message.fromJSON(cast)),
-      reactions: dataRaw.reactions.map((reaction) =>
-        Message.fromJSON(reaction)
-      ),
-      links: dataRaw.links.map((link) => Message.fromJSON(link)),
-      verifications: dataRaw.verifications.map((verification) =>
-        Message.fromJSON(verification)
-      ),
-      userData: dataRaw.userData.map((userData) => Message.fromJSON(userData)),
-      signers: dataRaw.signers.map((signer) => {
-        const { metadata, ...event } = signer as any;
-        const eventDecoded = OnChainEvent.fromJSON(
-          event
-        ) as unknown as SignerOnChainEvent;
-        return {
-          ...eventDecoded,
-          metadata: metadata as {
-            requestFid: number;
-            requestSigner: string;
-            signature: string;
-            deadline: number;
-          },
-        };
-      }),
-    };
-  }, [dataRaw]);
+  const {
+    data,
+    messageCountsByFid,
+    signersByFid,
+    lastUsedByFid,
+    isLoading: processingIsLoading,
+  } = useBackfillData(dataRaw);
 
-  const signersByFid = useMemo(() => {
-    // Group signers by requestFid
-    return data?.signers.reduce(
-      (acc, signer) => {
-        const fid = signer.metadata.requestFid.toString();
-        const signerKey = bytesToHex(signer.signerEventBody.key);
-
-        if (!acc.fidToSigner[fid]) {
-          acc.fidToSigner[fid] = [];
-        }
-        acc.fidToSigner[fid].push(signerKey);
-
-        if (!acc.signerToFid[signerKey]) {
-          acc.signerToFid[signerKey] = fid;
-        }
-
-        return acc;
-      },
-      { fidToSigner: {}, signerToFid: {} } as {
-        fidToSigner: Record<string, string[]>;
-        signerToFid: Record<string, string>;
-      }
+  const fidToSignerSorted = useMemo(() => {
+    if (!signersByFid) return;
+    return Object.entries(signersByFid.fidToSigner).sort(
+      ([fidA], [fidB]) =>
+        (lastUsedByFid?.[fidB] || new Date(0)).getTime() -
+        (lastUsedByFid?.[fidA] || new Date(0)).getTime()
     );
   }, [data]);
 
-  const messagesBySigner = useMemo(() => {
-    if (!data) return;
+  const inputFile = useRef<HTMLInputElement>(null);
 
-    const messages = {} as Record<
-      string,
-      Omit<typeof data, "signerProfiles" | "signers" | "userDataAggregated">
-    >;
-    data.casts.map((cast) => {
-      const signer = bytesToHex(cast.signer);
-      if (!messages[signer]) {
-        messages[signer] = {
-          casts: [],
-          reactions: [],
-          links: [],
-          verifications: [],
-          userData: [],
-        };
-      }
-      messages[signer].casts.push(cast);
-    });
-
-    data.reactions.map((reaction) => {
-      const signer = bytesToHex(reaction.signer);
-      if (!messages[signer]) {
-        messages[signer] = {
-          casts: [],
-          reactions: [],
-          links: [],
-          verifications: [],
-          userData: [],
-        };
-      }
-      messages[signer].reactions.push(reaction);
-    });
-
-    data.links.map((link) => {
-      const signer = bytesToHex(link.signer);
-      if (!messages[signer]) {
-        messages[signer] = {
-          casts: [],
-          reactions: [],
-          links: [],
-          verifications: [],
-          userData: [],
-        };
-      }
-      messages[signer].links.push(link);
-    });
-
-    data.verifications.map((verification) => {
-      const signer = bytesToHex(verification.signer);
-      if (!messages[signer]) {
-        messages[signer] = {
-          casts: [],
-          reactions: [],
-          links: [],
-          verifications: [],
-          userData: [],
-        };
-      }
-      messages[signer].verifications.push(verification);
-    });
-
-    return messages;
-  }, [data]);
-
-  const messageCountsByFid = useMemo(() => {
-    if (!messagesBySigner) return;
-
-    return Object.entries(messagesBySigner).reduce(
-      (acc, [signer, messages]) => {
-        if (!signersByFid) return acc;
-
-        const fid = signersByFid.signerToFid[signer];
-        console.log(`signer: ${signer}, fid: ${fid}`);
-        if (!acc[fid]) {
-          acc[fid] = {
-            casts: 0,
-            reactions: 0,
-            links: 0,
-            verifications: 0,
-          };
-        }
-        acc[fid].casts += messages.casts.length;
-        acc[fid].reactions += messages.reactions.length;
-        acc[fid].links += messages.links.length;
-        acc[fid].verifications += messages.verifications.length;
-
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          casts: number;
-          reactions: number;
-          links: number;
-          verifications: number;
-        }
-      >
-    );
-  }, [messagesBySigner]);
-
-  if (isLoading)
+  if (queryIsLoading)
     return <div>{process.env.NEXT_PUBLIC_HUB_REST_URL} Loading...</div>;
 
-  if (isError || !data || !signersByFid)
+  if (processingIsLoading) return <div>Processing...</div>;
+
+  if (isError || !data || !signersByFid || !fidToSignerSorted)
     return (
       <div>Error {error instanceof Error && error.message + error.stack}</div>
     );
@@ -189,24 +60,71 @@ export default function Home() {
     <div className="space-y-8">
       <div className="space-y-2">
         <UserAccount data={data.userDataAggregated} />
+        <div className="text-gray-500">{signerMessagesToString(data)}</div>
+      </div>
+
+      {appFid ? (
         <div>
-          {`${data.casts.length} casts, ${data.reactions.length} reactions, ${data.links.length} links, ${data.signers.length} signers, ${data.verifications.length} verifications`}
+          <AppDetail fid={appFid} onBack={() => setAppFid(null)}></AppDetail>
         </div>
-      </div>
-      <div className="space-y-4">
-        {Object.entries(signersByFid.fidToSigner).map(([fid, signers], i) => (
-          <div key={fid}>
-            <UserAccount data={data.signerProfiles[fid]} />
-            <div>
-              <div>{`${signers.length} signers`}</div>
-              {/* <pre>{JSON.stringify(messageCountsByFid?.[fid], null, 2)}</pre> */}
-              {messageCountsByFid?.[fid] && (
-                <div>{`${messageCountsByFid?.[fid].casts} casts, ${messageCountsByFid?.[fid].reactions} reactions, ${messageCountsByFid?.[fid].links} links, ${messageCountsByFid?.[fid].verifications} verifications`}</div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {fidToSignerSorted!.map(([fid, signers], i) => (
+            <button key={fid}>
+              <div
+                className={twMerge(
+                  "p-2 w-full h-full text-left flex flex-col gap-2",
+                  border
+                )}
+                onClick={() => setAppFid(fid)}
+              >
+                <UserAccount data={data.signerProfiles[fid]} />
+                <div>
+                  {messageCountsByFid?.[fid] && (
+                    <div>
+                      <div>
+                        {messageCountsByFid?.[fid].total.toLocaleString()}{" "}
+                        messages
+                      </div>
+                      <div>
+                        - {messageCountsByFid?.[fid].casts.toLocaleString()}{" "}
+                        casts
+                      </div>
+                      <div>
+                        - {messageCountsByFid?.[fid].reactions.toLocaleString()}{" "}
+                        reactions
+                      </div>
+                      <div>
+                        - {messageCountsByFid?.[fid].links.toLocaleString()}{" "}
+                        links
+                      </div>
+                      <div>
+                        -{" "}
+                        {messageCountsByFid?.[
+                          fid
+                        ].verifications.toLocaleString()}{" "}
+                        verifications
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="w-full text-right mt-auto">
+                  <div>{`${signers.length} signers`}</div>
+                  <div className="text-gray-500">
+                    {lastUsedByFid?.[fid] ? (
+                      <div title={getFullTime(lastUsedByFid?.[fid])}>
+                        Last used {timeAgo(lastUsedByFid?.[fid])} ago
+                      </div>
+                    ) : (
+                      <div>Never used</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

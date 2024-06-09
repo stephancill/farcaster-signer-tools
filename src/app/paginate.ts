@@ -58,7 +58,8 @@ export async function getAllMessagesFromHubEndpoint({
 
     messages.push(...resMessages);
 
-    break;
+    // Only fetch one page in development
+    if (process.env.NEXT_PUBLIC_NODE_ENV === "development") break;
 
     if (resMessages.length < MAX_PAGE_SIZE) {
       break;
