@@ -1,13 +1,16 @@
 import {
   CastId,
   FidRequest,
+  HashScheme,
   Message,
+  MessageData,
+  NobleEd25519Signer,
   UserDataType,
   base58ToBytes,
   fromFarcasterTime,
   isUserDataAddMessage,
 } from "@farcaster/hub-web";
-import { bytesToHex } from "viem";
+import { bytesToHex, hexToBytes } from "viem";
 import {
   getAllCastsByFid,
   getAllLinksByFid,
@@ -15,6 +18,9 @@ import {
   getAllReactionsByFid,
   getAllSignersByFid,
 } from "./paginate";
+import { blake3 } from "@noble/hashes/blake3";
+import { BackfillContextType } from "../context/backfillContext";
+import { SerializedMessagesArchive } from "./types";
 
 export const MAX_PAGE_SIZE = 1_000;
 
@@ -165,7 +171,13 @@ export function truncateAddress(address: string) {
 }
 
 export function signerMessagesToString(obj: any) {
-  return `${obj.casts.length.toLocaleString()} casts • ${obj.reactions.length.toLocaleString()} reactions • ${obj.links.length.toLocaleString()} links • ${obj.verifications.length.toLocaleString()} verifications`;
+  return `${(obj?.casts || []).length.toLocaleString()} casts • ${(
+    obj?.reactions || []
+  ).length.toLocaleString()} reactions • ${(
+    obj?.links || []
+  ).length.toLocaleString()} links • ${(
+    obj?.verifications || []
+  ).length.toLocaleString()} verifications`;
 }
 
 export function castIdToUrl({ hash }: CastId) {
@@ -183,6 +195,73 @@ export function downloadJsonFile(filename: string, data: any) {
   document.body.appendChild(link);
   link.click();
   link.remove();
+}
+
+export async function signMessageData(
+  messageData: MessageData,
+  privateKey: `0x${string}`
+) {
+  const signer = new NobleEd25519Signer(hexToBytes(privateKey));
+
+  const dataBytes = MessageData.encode(messageData).finish();
+
+  const hash = blake3(dataBytes, { dkLen: 20 });
+
+  const signature = await signer.signMessageHash(hash);
+  if (signature.isErr()) return null;
+
+  const signerKey = await signer.getSignerKey();
+  if (signerKey.isErr()) return null;
+
+  const message = Message.create({
+    data: messageData,
+    hash,
+    hashScheme: HashScheme.BLAKE3,
+    signature: signature.value,
+    signatureScheme: signer.scheme,
+    signer: signerKey.value,
+  });
+
+  return message;
+}
+
+export function handleBackup(
+  signer: string,
+  { messagesBySigner, data, signersByFid }: BackfillContextType
+) {
+  try {
+    const messages = messagesBySigner?.[signer];
+    const fid = signersByFid?.signerToFid[signer];
+
+    if (!messages) {
+      console.error("No messages found for signer", signer);
+      return;
+    }
+
+    const messagesJson = {} as SerializedMessagesArchive;
+
+    for (const key of [
+      "casts",
+      "reactions",
+      "links",
+      "verifications",
+      "userData",
+    ] as const) {
+      messagesJson[key] = messages[key].map((m) => Message.toJSON(m));
+    }
+
+    messagesJson["signerPubKeys"] = [signer];
+
+    downloadJsonFile(
+      `fsm-backup-${new Date().toISOString()}-${
+        data?.signerProfiles[fid!][UserDataType.USERNAME]
+      }-${signer}.json`,
+      messagesJson
+    );
+  } catch (error) {
+    console.error(error);
+    alert("Error backing up messages");
+  }
 }
 
 /**

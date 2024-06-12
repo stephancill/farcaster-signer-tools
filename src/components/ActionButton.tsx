@@ -10,7 +10,13 @@ export function ActionButton(
   return (
     <button
       {...props}
-      className={twMerge(props.className, "p-2 border border-black")}
+      className={twMerge(
+        "p-2 border border-black",
+        props.className,
+        props.disabled
+          ? "opacity-50 text-gray-500 border-gray-300 cursor-not-allowed"
+          : ""
+      )}
     />
   );
 }

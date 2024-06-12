@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@farcaster/hub-web": "^0.8.9",
+    "@noble/ed25519": "^2.1.0",
+    "@noble/hashes": "^1.4.0",
     "@rainbow-me/rainbowkit": "^2.1.2",
     "@tanstack/query-sync-storage-persister": "^5.40.0",
     "@tanstack/react-query": "^5.40.1",
@@ -18,9 +20,11 @@
     "encoding": "^0.1.13",
     "next": "14.2.3",
     "pino-pretty": "^11.1.0",
+    "qrcode.react": "^3.1.0",
     "react": "^18",
     "react-dom": "^18",
     "react-modal": "^3.16.1",
+    "react-router-dom": "^6.23.1",
     "tailwind-merge": "^2.3.0",
     "viem": "^2.13.7",
     "wagmi": "^2.9.10"
