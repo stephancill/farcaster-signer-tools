@@ -19,6 +19,7 @@ import {
   timeAgo,
 } from "./utils";
 import { SignerDetail } from "../components/SignerDetail";
+import { BackButton } from "../components/BackButton";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -121,12 +122,12 @@ export default function Home() {
           path="/import"
           element={
             importedData ? (
-              <ImportDetail
-                importedData={importedData}
-                setImportedData={setImportedData}
-              ></ImportDetail>
+              <ImportDetail importedData={importedData}></ImportDetail>
             ) : (
-              <div>Data not imported</div>
+              <div>
+                <BackButton></BackButton>
+                <div>Data not imported</div>
+              </div>
             )
           }
         />
