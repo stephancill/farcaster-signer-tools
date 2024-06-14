@@ -7,6 +7,7 @@ import { MessagesArchive } from "../app/types";
 import {
   signMessageData,
   signerMessagesToString,
+  submitMessage,
   truncateAddress,
 } from "../app/utils";
 import { useBackfillData } from "../context/backfillContext";
@@ -78,18 +79,9 @@ export function ImportDetail({
         console.log(`Submitting batch ${i++} of ${batches.length}`);
         const results = await Promise.all(
           batch.map(async (message) => {
-            const messageBytes = Buffer.from(Message.encode(message).finish());
-
-            const submitMessageResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_HUB_REST_URL}/v1/submitMessage`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/octet-stream",
-                },
-                body: messageBytes,
-              }
-            );
+            const submitMessageResponse = await submitMessage(message, {
+              hubRestUrl: process.env.NEXT_PUBLIC_HUB_REST_URL!,
+            });
 
             if (!submitMessageResponse.ok) {
               console.error(

@@ -15,6 +15,8 @@ export type BackfillContextType = {
   messageCountsByFid?: ReturnType<typeof indexMessageCountsByFid>;
   /** Last used by app FID */
   lastUsedByFid?: ReturnType<typeof indexLastUsedByFid>;
+  /** Messages by hash */
+  messagesByHash?: ReturnType<typeof indexMessagesByHash>;
   /** Set the raw data */
   setDataRaw: (data: any) => void;
   /** Loading indicator status */
@@ -25,6 +27,15 @@ export type DataMessages = Omit<
   ReturnType<typeof decodeJsonData>,
   "signerProfiles" | "signers" | "userDataAggregated"
 >;
+
+const messageTypeKeys = [
+  "casts",
+  "reactions",
+  "links",
+  "verifications",
+  "userData",
+] as const;
+
 export type SignerMessagesType = DataMessages & {
   lastUsed?: Date;
   createdAt?: Date;
@@ -43,13 +54,7 @@ export function BackfillContextProvider({
     ReturnType<typeof getFullProfileFromHub>
   > | null>(null);
 
-  const {
-    data,
-    signersByFid,
-    messagesBySigner,
-    messageCountsByFid,
-    lastUsedByFid,
-  } = useMemo(() => {
+  const indexResults = useMemo(() => {
     if (!dataRaw) return {} as BackfillContextType;
     setIsLoading(true);
     const data = decodeJsonData(dataRaw);
@@ -60,6 +65,11 @@ export function BackfillContextProvider({
       signersByFid
     );
     const lastUsedByFid = indexLastUsedByFid(messagesBySigner, signersByFid);
+    const messagesByHash = indexMessagesByHash(
+      messageTypeKeys.map((key) => data[key]).flat()
+    );
+
+    console.log(messagesByHash);
     setIsLoading(false);
     return {
       data,
@@ -67,15 +77,12 @@ export function BackfillContextProvider({
       messagesBySigner,
       messageCountsByFid,
       lastUsedByFid,
+      messagesByHash,
     };
   }, [dataRaw]);
 
   const value: BackfillContextType = {
-    data,
-    signersByFid,
-    messagesBySigner,
-    messageCountsByFid,
-    lastUsedByFid,
+    ...indexResults,
     setDataRaw,
     isLoading,
   };
@@ -205,13 +212,7 @@ function indexMessagesBySigner(data: ReturnType<typeof decodeJsonData>) {
     });
   }
 
-  for (const key of [
-    "casts",
-    "reactions",
-    "links",
-    "verifications",
-    "userData",
-  ] as const) {
+  for (const key of messageTypeKeys) {
     processMessages(data[key], key);
   }
 
@@ -286,4 +287,12 @@ function indexLastUsedByFid(
     }
     return acc;
   }, {} as Record<string, Date>);
+}
+
+function indexMessagesByHash(messages: Message[]) {
+  return messages.reduce((acc, message) => {
+    if (!message.hash) return acc;
+    acc[bytesToHex(message.hash)] = message;
+    return acc;
+  }, {} as Record<string, Message>);
 }

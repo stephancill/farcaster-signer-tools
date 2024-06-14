@@ -227,6 +227,23 @@ export async function signMessageData(
   return message;
 }
 
+export async function submitMessage(
+  message: Message,
+  { hubRestUrl }: { hubRestUrl: string }
+) {
+  const messageBytes = Buffer.from(Message.encode(message).finish());
+
+  const submitMessageResponse = await fetch(`${hubRestUrl}/v1/submitMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/octet-stream",
+    },
+    body: messageBytes,
+  });
+
+  return submitMessageResponse;
+}
+
 export function handleBackup(
   signer: string,
   { messagesBySigner, data, signersByFid }: BackfillContextType

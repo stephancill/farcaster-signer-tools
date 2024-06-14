@@ -1,7 +1,14 @@
-import { isCastAddMessage } from "@farcaster/hub-web";
+import {
+  CastAddMessage,
+  CastRemoveMessage,
+  isCastAddMessage,
+  isCastRemoveMessage,
+} from "@farcaster/hub-web";
 import { bytesToHex } from "viem";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import {
+  farcasterTimeToDate,
+  getFullTime,
   handleBackup,
   signerMessagesToString,
   timeAgo,
@@ -16,13 +23,15 @@ import { CastView } from "./CastView";
 import { PaginatedGrid } from "./PaginatedGrid";
 import { useParams } from "react-router-dom";
 import { UserDataView } from "./UserDataView";
+import { twMerge } from "tailwind-merge";
+import { border } from "../style/common";
 
 export function SignerDetail({ signer: signerProp }: { signer?: string }) {
   const { signer: signerRoute } = useParams<{ signer: string }>();
   const signer = signerRoute || signerProp;
 
   const backfillData = useBackfillData();
-  const { data, messagesBySigner, signersByFid } = backfillData;
+  const { data, messagesBySigner, signersByFid, messagesByHash } = backfillData;
 
   const { data: hash, writeContract, isPending, isIdle } = useWriteContract();
 
@@ -51,8 +60,9 @@ export function SignerDetail({ signer: signerProp }: { signer?: string }) {
     );
   }
 
-  const casts =
-    messagesBySigner?.[signer!].casts.filter(isCastAddMessage) || [];
+  const casts = (messagesBySigner?.[signer!].casts.filter(
+    (c) => isCastAddMessage(c) || isCastRemoveMessage(c)
+  ) || []) as (CastAddMessage | CastRemoveMessage)[];
 
   const signerFidProfile =
     signer && signersByFid?.signerToFid[signer!]
@@ -119,9 +129,35 @@ export function SignerDetail({ signer: signerProp }: { signer?: string }) {
       {casts.length > 0 && (
         <PaginatedGrid
           items={casts}
-          renderItem={(cast) => (
-            <CastView key={bytesToHex(cast.hash)} castAddMessage={cast} />
-          )}
+          renderItem={(cast) =>
+            isCastAddMessage(cast) ? (
+              <CastView key={bytesToHex(cast.hash)} castAddMessage={cast} />
+            ) : (
+              <div
+                className={twMerge(
+                  "flex flex-col p-2 break-word [overflow-wrap:anywhere] gap-2",
+                  border
+                )}
+              >
+                <div className="text-gray-500">
+                  <strike>
+                    {bytesToHex(cast.data.castRemoveBody.targetHash)}
+                  </strike>
+                </div>
+                <div className="flex">
+                  <div
+                    className="text-gray-500"
+                    title={getFullTime(
+                      farcasterTimeToDate(cast.data.timestamp)
+                    )}
+                  >
+                    {timeAgo(farcasterTimeToDate(cast.data.timestamp))} ago
+                  </div>
+                  <div className="ml-auto text-gray-500">Removed</div>
+                </div>
+              </div>
+            )
+          }
         />
       )}
     </div>

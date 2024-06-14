@@ -20,6 +20,7 @@ import {
 } from "./utils";
 import { SignerDetail } from "../components/SignerDetail";
 import { BackButton } from "../components/BackButton";
+import { DebugPage } from "../components/DebugDetail";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -28,8 +29,10 @@ export default function Home() {
   const {
     data: dataRaw,
     isLoading: queryIsLoading,
+    isFetching,
     error,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ["profile", 1689],
     queryFn: async () => getFullProfileFromHub(1689),
@@ -63,7 +66,7 @@ export default function Home() {
     }
   }, [importedData]);
 
-  if (queryIsLoading)
+  if (queryIsLoading || isFetching)
     return <div>{process.env.NEXT_PUBLIC_HUB_REST_URL} Loading...</div>;
 
   if (processingIsLoading) return <div>Processing...</div>;
@@ -110,6 +113,7 @@ export default function Home() {
               }
             }}
           />
+          <ActionButton onClick={() => refetch()}>Refresh</ActionButton>
           <ActionButton onClick={() => inputFile.current?.click()}>
             Import
           </ActionButton>
@@ -118,6 +122,8 @@ export default function Home() {
       </div>
 
       <Routes>
+        <Route path="/debug" element={<DebugPage />} />
+
         <Route
           path="/import"
           element={
