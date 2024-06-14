@@ -15,12 +15,14 @@ import { useFarcasterIdentity } from "../hooks/useFarcasterIdentity";
 import { ActionButton } from "./ActionButton";
 import { BackButton } from "./BackButton";
 import { LocalSignerView } from "./LocalSignerView";
+import { useConfig } from "../context/configContext";
 
 export function ImportDetail({
   importedData,
 }: {
   importedData: MessagesArchive | null;
 }) {
+  const config = useConfig();
   const backfillData = useBackfillData();
   const farcasterIdentity = useFarcasterIdentity();
   const [submitting, setSubmitting] = useState(false);
@@ -80,7 +82,7 @@ export function ImportDetail({
         const results = await Promise.all(
           batch.map(async (message) => {
             const submitMessageResponse = await submitMessage(message, {
-              hubRestUrl: process.env.NEXT_PUBLIC_HUB_REST_URL!,
+              hubUrl: config.hubUrl,
             });
 
             if (!submitMessageResponse.ok) {

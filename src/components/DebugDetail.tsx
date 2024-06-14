@@ -15,8 +15,11 @@ import { SignerView } from "./SignerView";
 import { ActionButton } from "./ActionButton";
 import { hexToBytes } from "viem";
 import { BackButton } from "./BackButton";
+import { useConfig } from "../context/configContext";
 
 export function DebugPage() {
+  const config = useConfig();
+
   const [rawJson, setRawJson] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const { signer } = useFarcasterIdentity();
@@ -58,7 +61,7 @@ export function DebugPage() {
 
     const result = hubResult._unsafeUnwrap();
     await submitMessage(result, {
-      hubRestUrl: process.env.NEXT_PUBLIC_HUB_REST_URL!,
+      hubUrl: config.hubUrl,
     });
   }
 
@@ -85,7 +88,7 @@ export function DebugPage() {
 
     const result = hubResult._unsafeUnwrap();
     await submitMessage(result, {
-      hubRestUrl: process.env.NEXT_PUBLIC_HUB_REST_URL!,
+      hubUrl: config.hubUrl,
     });
   }
 

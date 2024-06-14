@@ -31,9 +31,11 @@ export const signedKeyRequestAbi = [
 export async function getAllMessagesFromHubEndpoint({
   endpoint,
   fid,
+  hubUrl,
 }: {
   endpoint: string;
   fid: number;
+  hubUrl: string;
 }) {
   const messages: unknown[] = new Array();
   let nextPageToken: string | undefined;
@@ -48,7 +50,7 @@ export async function getAllMessagesFromHubEndpoint({
       params.append("pageToken", nextPageToken);
     }
 
-    const url = `${process.env.NEXT_PUBLIC_HUB_REST_URL}${endpoint}?${params}`;
+    const url = `${hubUrl}${endpoint}?${params}`;
 
     const res = await fetch(url);
     const { messages: resMessages, nextPageToken: _nextPageToken } =
@@ -74,28 +76,40 @@ export async function getAllMessagesFromHubEndpoint({
   return messages;
 }
 
-export async function getAllCastsByFid(fid: FidRequest) {
+export async function getAllCastsByFid(
+  fid: FidRequest,
+  { hubUrl }: { hubUrl: string }
+) {
   const casts: unknown[] = await getAllMessagesFromHubEndpoint({
     endpoint: "/v1/castsByFid",
     fid: fid.fid,
+    hubUrl,
   });
 
   return casts;
 }
 
-export async function getAllReactionsByFid(fid: FidRequest) {
+export async function getAllReactionsByFid(
+  fid: FidRequest,
+  { hubUrl }: { hubUrl: string }
+) {
   const reactions: unknown[] = await getAllMessagesFromHubEndpoint({
     endpoint: "/v1/reactionsByFid",
     fid: fid.fid,
+    hubUrl,
   });
 
   return reactions;
 }
 
-export async function getAllLinksByFid(fid: FidRequest) {
+export async function getAllLinksByFid(
+  fid: FidRequest,
+  { hubUrl }: { hubUrl: string }
+) {
   const links: unknown[] = await getAllMessagesFromHubEndpoint({
     endpoint: "/v1/linksByFid",
     fid: fid.fid,
+    hubUrl,
   });
 
   return links;
@@ -105,7 +119,10 @@ export function decodeSignedKeyRequestMetadata(metadata: Uint8Array) {
   return decodeAbiParameters(signedKeyRequestAbi, bytesToHex(metadata))[0];
 }
 
-export async function getAllSignersByFid(fid: FidRequest) {
+export async function getAllSignersByFid(
+  fid: FidRequest,
+  { hubUrl }: { hubUrl: string }
+) {
   const events: unknown[] = new Array();
   let nextPageToken: string | undefined;
 
@@ -119,9 +136,7 @@ export async function getAllSignersByFid(fid: FidRequest) {
       params.append("pageToken", nextPageToken);
     }
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_HUB_REST_URL}/v1/onChainSignersByFid?${params}`
-    );
+    const res = await fetch(`${hubUrl}/v1/onChainSignersByFid?${params}`);
     const { events: resEvents, ..._nextPageToken } = await res.json();
 
     nextPageToken = _nextPageToken;

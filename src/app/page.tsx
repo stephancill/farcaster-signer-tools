@@ -21,10 +21,14 @@ import {
 import { SignerDetail } from "../components/SignerDetail";
 import { BackButton } from "../components/BackButton";
 import { DebugPage } from "../components/DebugDetail";
+import { useConfig } from "../context/configContext";
 
 export default function Home() {
   const navigate = useNavigate();
-  const [appFid, setAppFid] = useState<string | null>(null);
+  const config = useConfig();
+  const { fid, hubUrl, setFid, setHubUrl } = useConfig();
+  const [fidRaw, setFidRaw] = useState<string>("");
+  const [hubUrlRaw, setHubUrlRaw] = useState<string>("");
 
   const {
     data: dataRaw,
@@ -34,8 +38,9 @@ export default function Home() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["profile", 1689],
-    queryFn: async () => getFullProfileFromHub(1689),
+    queryKey: ["profile", fid, hubUrl],
+    queryFn: async () =>
+      fid ? getFullProfileFromHub(fid, { hubUrl }) : undefined,
   });
 
   const {
@@ -66,20 +71,64 @@ export default function Home() {
     }
   }, [importedData]);
 
+  if (!fid) {
+    return (
+      <div className="flex gap-2">
+        <input
+          className="border border-black p-2"
+          type="text"
+          placeholder={"FID"}
+          onChange={(e) => setFidRaw(e.target.value)}
+        />
+        <input
+          className="border border-black p-2"
+          type="text"
+          placeholder={hubUrl}
+          onChange={(e) => setHubUrlRaw(e.target.value)}
+        />
+        <ActionButton
+          onClick={() => {
+            if (fidRaw) {
+              setFid(parseInt(fidRaw));
+            }
+
+            if (hubUrlRaw) {
+              setHubUrl(hubUrlRaw);
+            }
+          }}
+        >
+          Load
+        </ActionButton>
+      </div>
+    );
+  }
+
   if (queryIsLoading || isFetching)
-    return <div>{process.env.NEXT_PUBLIC_HUB_REST_URL} Loading...</div>;
+    return (
+      <div>
+        Loading {config.fid} from {config.hubUrl}...
+      </div>
+    );
 
-  if (processingIsLoading) return <div>Processing...</div>;
-
-  if (isError || !data || !signersByFid || !fidToSignerSorted) {
+  if (isError) {
     return (
       <div>Error {error instanceof Error && error.message + error.stack}</div>
     );
   }
 
+  if (processingIsLoading || !data || !signersByFid || !fidToSignerSorted)
+    return <div>Processing...</div>;
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">
+        <button
+          onClick={() => {
+            setFid(null);
+          }}
+        >
+          ← Config
+        </button>
         <UserDataView data={data.userDataAggregated} />
         <div className="text-gray-500">{signerMessagesToString(data)}</div>
         <div className="flex gap-2">
@@ -152,7 +201,6 @@ export default function Home() {
                       "p-2 w-full h-full text-left flex flex-col gap-2",
                       border
                     )}
-                    onClick={() => setAppFid(fid)}
                   >
                     <UserDataView data={data.signerProfiles[fid]} />
                     <div>

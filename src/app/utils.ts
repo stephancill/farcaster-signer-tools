@@ -30,19 +30,24 @@ export const MAX_PAGE_SIZE = 1_000;
  * Index all messages from a profile
  * @param fid Farcaster ID
  */
-export async function getFullProfileFromHub(_fid: number) {
+export async function getFullProfileFromHub(
+  _fid: number,
+  { hubUrl }: { hubUrl: string }
+) {
   const fid = FidRequest.create({ fid: _fid });
 
   const verifications = await getAllMessagesFromHubEndpoint({
     endpoint: "/v1/verificationsByFid",
     fid: fid.fid,
+    hubUrl,
   });
 
-  const signers = await getAllSignersByFid(fid);
+  const signers = await getAllSignersByFid(fid, { hubUrl });
 
   const userData = await getAllMessagesFromHubEndpoint({
     endpoint: "/v1/userDataByFid",
     fid: fid.fid,
+    hubUrl,
   });
 
   const signerFidsUnique = Array.from(
@@ -58,13 +63,15 @@ export async function getFullProfileFromHub(_fid: number) {
     Awaited<ReturnType<typeof getUserData>>
   > = {};
   for (const signerFid of signerFidsUnique) {
-    signerProfiles[signerFid.toString()] = await getUserData(signerFid);
+    signerProfiles[signerFid.toString()] = await getUserData(signerFid, {
+      hubUrl,
+    });
   }
 
   const result = {
-    casts: await getAllCastsByFid(fid),
-    reactions: await getAllReactionsByFid(fid),
-    links: await getAllLinksByFid(fid),
+    casts: await getAllCastsByFid(fid, { hubUrl }),
+    reactions: await getAllReactionsByFid(fid, { hubUrl }),
+    links: await getAllLinksByFid(fid, { hubUrl }),
     userData,
     userDataAggregated: aggregateUserData(userData),
     verifications: verifications,
@@ -94,10 +101,11 @@ function aggregateUserData(messagesJson: unknown[]) {
   );
 }
 
-async function getUserData(fid: number) {
+async function getUserData(fid: number, { hubUrl }: { hubUrl: string }) {
   const userData = await getAllMessagesFromHubEndpoint({
     endpoint: "/v1/userDataByFid",
     fid,
+    hubUrl,
   });
 
   return aggregateUserData(userData);
@@ -229,11 +237,11 @@ export async function signMessageData(
 
 export async function submitMessage(
   message: Message,
-  { hubRestUrl }: { hubRestUrl: string }
+  { hubUrl }: { hubUrl: string }
 ) {
   const messageBytes = Buffer.from(Message.encode(message).finish());
 
-  const submitMessageResponse = await fetch(`${hubRestUrl}/v1/submitMessage`, {
+  const submitMessageResponse = await fetch(`${hubUrl}/v1/submitMessage`, {
     method: "POST",
     headers: {
       "Content-Type": "application/octet-stream",

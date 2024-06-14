@@ -8,6 +8,7 @@ import { optimism } from "wagmi/chains";
 import { BackfillContextProvider } from "../context/backfillContext";
 import "./globals.css";
 import { HashRouter, Route, Link, Routes } from "react-router-dom";
+import { ConfigContextProvider } from "../context/configContext";
 
 const config = createConfig(
   getDefaultConfig({
@@ -35,11 +36,13 @@ export default function RootLayout({
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <ConnectKitProvider>
-            <BackfillContextProvider>
-              <HashRouter>
-                <body className="p-2 md:p-10">{children}</body>
-              </HashRouter>
-            </BackfillContextProvider>
+            <ConfigContextProvider>
+              <BackfillContextProvider>
+                <HashRouter>
+                  <body className="p-2 md:p-10">{children}</body>
+                </HashRouter>
+              </BackfillContextProvider>
+            </ConfigContextProvider>
           </ConnectKitProvider>
         </QueryClientProvider>
       </WagmiProvider>
