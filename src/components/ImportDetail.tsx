@@ -10,7 +10,7 @@ import {
   submitMessage,
   truncateAddress,
 } from "../app/utils";
-import { useBackfillData } from "../context/backfillContext";
+import { messageTypeKeys, useBackfillData } from "../context/backfillContext";
 import { useFarcasterIdentity } from "../hooks/useFarcasterIdentity";
 import { ActionButton } from "./ActionButton";
 import { BackButton } from "./BackButton";
@@ -20,7 +20,7 @@ import { useConfig } from "../context/configContext";
 export function ImportDetail({
   importedData,
 }: {
-  importedData: MessagesArchive | null;
+  importedData: MessagesArchive;
 }) {
   const config = useConfig();
   const backfillData = useBackfillData();
@@ -28,15 +28,14 @@ export function ImportDetail({
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSignRebroadcast() {
-    if (!farcasterIdentity.signer) {
+    if (!farcasterIdentity.signer || !importedData) {
       return;
     }
 
     setSubmitting(true);
 
     try {
-      // TODO: Test if this works
-      const messages = importedData?.casts.slice(0, 5);
+      const messages = messageTypeKeys.map((k) => importedData[k]).flat();
 
       if (!messages) {
         throw new Error("No messages found for signer");
@@ -63,9 +62,10 @@ export function ImportDetail({
       ).filter((m) => m) as Message[];
 
       // Batch messages
+      // TODO: Actual rate limiting, but hubs can handle 20k messages/min by default so most people should be fine
       const batches = newMessages.reduce<Message[][]>(
         (acc, message, i) => {
-          const batchIndex = Math.floor(i / 2);
+          const batchIndex = Math.floor(i / 1000);
           if (!acc[batchIndex]) {
             acc[batchIndex] = [];
           }

@@ -28,7 +28,7 @@ export type DataMessages = Omit<
   "signerProfiles" | "signers" | "userDataAggregated"
 >;
 
-const messageTypeKeys = [
+export const messageTypeKeys = [
   "casts",
   "reactions",
   "links",
