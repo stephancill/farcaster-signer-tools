@@ -30,6 +30,8 @@ export default function Home() {
   const [fidRaw, setFidRaw] = useState<string>("");
   const [hubUrlRaw, setHubUrlRaw] = useState<string>("");
 
+  const [progressMessages, setProgressMessages] = useState<string[]>([]);
+
   const {
     data: dataRaw,
     isLoading: queryIsLoading,
@@ -40,7 +42,14 @@ export default function Home() {
   } = useQuery({
     queryKey: ["profile", fid, hubUrl],
     queryFn: async () =>
-      fid ? getFullProfileFromHub(fid, { hubUrl }) : undefined,
+      fid
+        ? getFullProfileFromHub(fid, {
+            hubUrl,
+            onProgress(message) {
+              setProgressMessages((prev) => [...prev, message]);
+            },
+          })
+        : undefined,
   });
 
   const {
@@ -70,6 +79,12 @@ export default function Home() {
       navigate("/import");
     }
   }, [importedData]);
+
+  useEffect(() => {
+    if (data) {
+      setProgressMessages([]);
+    }
+  }, [isFetching]);
 
   if (!fid) {
     return (
@@ -106,13 +121,28 @@ export default function Home() {
   if (queryIsLoading || isFetching)
     return (
       <div>
-        Loading {config.fid} from {config.hubUrl}...
+        <div>
+          Loading {config.fid} from {config.hubUrl}...
+        </div>
+        {progressMessages.map((message, i) => (
+          <div key={i}>{message}</div>
+        ))}
       </div>
     );
 
   if (isError) {
     return (
-      <div>Error {error instanceof Error && error.message + error.stack}</div>
+      <div>
+        <button
+          onClick={() => {
+            setFid(null);
+            setProgressMessages([]);
+          }}
+        >
+          ← Back
+        </button>
+        <div>Error {error instanceof Error && error.message + error.stack}</div>
+      </div>
     );
   }
 

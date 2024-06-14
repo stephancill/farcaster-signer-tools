@@ -32,9 +32,14 @@ export const MAX_PAGE_SIZE = 1_000;
  */
 export async function getFullProfileFromHub(
   _fid: number,
-  { hubUrl }: { hubUrl: string }
+  {
+    hubUrl,
+    onProgress,
+  }: { hubUrl: string; onProgress?: (message: string) => void }
 ) {
   const fid = FidRequest.create({ fid: _fid });
+
+  onProgress?.("Fetching verifications...");
 
   const verifications = await getAllMessagesFromHubEndpoint({
     endpoint: "/v1/verificationsByFid",
@@ -42,7 +47,11 @@ export async function getFullProfileFromHub(
     hubUrl,
   });
 
+  onProgress?.("Fetching signers...");
+
   const signers = await getAllSignersByFid(fid, { hubUrl });
+
+  onProgress?.("Fetching user data...");
 
   const userData = await getAllMessagesFromHubEndpoint({
     endpoint: "/v1/userDataByFid",
@@ -58,6 +67,8 @@ export async function getFullProfileFromHub(
     )
   );
 
+  onProgress?.("Fetching signera app profiles...");
+
   const signerProfiles: Record<
     string,
     Awaited<ReturnType<typeof getUserData>>
@@ -68,10 +79,19 @@ export async function getFullProfileFromHub(
     });
   }
 
+  onProgress?.("Fetching casts...");
+  const casts = await getAllCastsByFid(fid, { hubUrl });
+
+  onProgress?.("Fetching reactions...");
+  const reactions = await getAllReactionsByFid(fid, { hubUrl });
+
+  onProgress?.("Fetching links...");
+  const links = await getAllLinksByFid(fid, { hubUrl });
+
   const result = {
-    casts: await getAllCastsByFid(fid, { hubUrl }),
-    reactions: await getAllReactionsByFid(fid, { hubUrl }),
-    links: await getAllLinksByFid(fid, { hubUrl }),
+    casts,
+    reactions,
+    links,
     userData,
     userDataAggregated: aggregateUserData(userData),
     verifications: verifications,
