@@ -139,10 +139,8 @@ export function SignerDetail({ signer: signerProp }: { signer?: string }) {
                   border
                 )}
               >
-                <div className="text-gray-500">
-                  <strike>
-                    {bytesToHex(cast.data.castRemoveBody.targetHash)}
-                  </strike>
+                <div className="text-gray-500 line-through">
+                  {bytesToHex(cast.data.castRemoveBody.targetHash)}
                 </div>
                 <div className="flex">
                   <div
