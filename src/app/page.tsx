@@ -22,6 +22,7 @@ import { SignerDetail } from "../components/SignerDetail";
 import { BackButton } from "../components/BackButton";
 import { DebugPage } from "../components/DebugDetail";
 import { useConfig } from "../context/configContext";
+import { Footer } from "../components/Footer";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -285,6 +286,7 @@ export default function Home() {
           }
         />
       </Routes>
+      <Footer />
     </div>
   );
 }

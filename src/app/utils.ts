@@ -67,7 +67,7 @@ export async function getFullProfileFromHub(
     )
   );
 
-  onProgress?.("Fetching signera app profiles...");
+  onProgress?.("Fetching signer app profiles...");
 
   const signerProfiles: Record<
     string,
