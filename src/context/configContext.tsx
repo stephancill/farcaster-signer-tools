@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 export type ConfigContextType = {
   fid: number | null;
@@ -19,6 +19,17 @@ export function ConfigContextProvider({
   const [hubUrl, setHubUrl] = useState<string>(
     process.env.NEXT_PUBLIC_HUB_REST_URL || "https://nemes.farcaster.xyz:2281"
   );
+
+  useEffect(() => {
+    console.log(window.location);
+    try {
+      const queryParameters = new URLSearchParams(window.location.search);
+      const fid = queryParameters.get("fid");
+      if (fid) {
+        setFid(parseInt(fid));
+      }
+    } catch (error) {}
+  }, [window.location]);
 
   const value: ConfigContextType = {
     fid,
