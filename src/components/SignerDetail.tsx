@@ -122,7 +122,16 @@ export function SignerDetail({ signer: signerProp }: { signer?: string }) {
             )}
           </div>
         ) : (
-          <div className="p-2 border border-gray-300 text-gray-500">No FID</div>
+          <div
+            className="p-2 border border-gray-300 text-gray-500 cursor-not-allowed"
+            title={
+              walletAddress
+                ? "No FID associated with this wallet. Are you using the seed phrase from Warpcast?"
+                : "Connect the wallet that custodies your FID"
+            }
+          >
+            Delete
+          </div>
         )}
       </div>
 
@@ -138,6 +147,7 @@ export function SignerDetail({ signer: signerProp }: { signer?: string }) {
                   "flex flex-col p-2 break-word [overflow-wrap:anywhere] gap-2",
                   border
                 )}
+                key={bytesToHex(cast.hash)}
               >
                 <div className="text-gray-500 line-through">
                   {bytesToHex(cast.data.castRemoveBody.targetHash)}
