@@ -4,6 +4,8 @@ import {
   isCastAddMessage,
   isCastRemoveMessage,
 } from "@farcaster/hub-web";
+import { useParams } from "react-router-dom";
+import { twMerge } from "tailwind-merge";
 import { bytesToHex } from "viem";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import {
@@ -17,14 +19,12 @@ import {
 import { useBackfillData } from "../context/backfillContext";
 import { ID_REGISTRY } from "../contracts/id-registry";
 import { KEY_REGISTRY } from "../contracts/key-registry";
+import { border } from "../style/common";
 import { ActionButton } from "./ActionButton";
 import { BackButton } from "./BackButton";
 import { CastView } from "./CastView";
 import { PaginatedGrid } from "./PaginatedGrid";
-import { useParams } from "react-router-dom";
 import { UserDataView } from "./UserDataView";
-import { twMerge } from "tailwind-merge";
-import { border } from "../style/common";
 
 export function SignerDetail({ signer: signerProp }: { signer?: string }) {
   const { signer: signerRoute } = useParams<{ signer: string }>();

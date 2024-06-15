@@ -1,18 +1,12 @@
 import { Message, UserDataType } from "@farcaster/hub-web";
-import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
-import { useSendTransaction } from "wagmi";
 import { SerializedMessagesArchive } from "../app/types";
 import { downloadJsonFile } from "../app/utils";
-import {
-  BackfillContextType,
-  useBackfillData,
-} from "../context/backfillContext";
+import { useBackfillData } from "../context/backfillContext";
 import { border } from "../style/common";
 import { ActionButton } from "./ActionButton";
 import { BackButton } from "./BackButton";
-import { SignerDetail } from "./SignerDetail";
 import { SignerView } from "./SignerView";
 import { UserDataView } from "./UserDataView";
 

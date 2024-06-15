@@ -1,5 +1,5 @@
 import { Message } from "@farcaster/hub-web";
-import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
 import { bytesToHex } from "viem";
@@ -11,11 +11,11 @@ import {
   truncateAddress,
 } from "../app/utils";
 import { messageTypeKeys, useBackfillData } from "../context/backfillContext";
+import { useConfig } from "../context/configContext";
 import { useFarcasterIdentity } from "../hooks/useFarcasterIdentity";
 import { ActionButton } from "./ActionButton";
 import { BackButton } from "./BackButton";
 import { LocalSignerView } from "./LocalSignerView";
-import { useConfig } from "../context/configContext";
 
 export function ImportDetail({
   importedData,

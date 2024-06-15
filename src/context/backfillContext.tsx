@@ -69,7 +69,6 @@ export function BackfillContextProvider({
       messageTypeKeys.map((key) => data[key]).flat()
     );
 
-    console.log(messagesByHash);
     setIsLoading(false);
     return {
       data,

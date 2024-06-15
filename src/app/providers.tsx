@@ -7,7 +7,6 @@ import { WagmiProvider, createConfig } from "wagmi";
 import { optimism } from "wagmi/chains";
 import { BackfillContextProvider } from "../context/backfillContext";
 import { ConfigContextProvider } from "../context/configContext";
-import "./globals.css";
 
 const config = createConfig(
   getDefaultConfig({
@@ -17,13 +16,7 @@ const config = createConfig(
   })
 );
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      gcTime: 1000 * 60 * 60 * 24, // 24 hours
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 export default function Providers({
   children,
@@ -36,9 +29,7 @@ export default function Providers({
         <ConnectKitProvider>
           <ConfigContextProvider>
             <BackfillContextProvider>
-              {typeof window !== "undefined" ? (
-                <HashRouter>{children}</HashRouter>
-              ) : null}
+              <HashRouter>{children}</HashRouter>
             </BackfillContextProvider>
           </ConfigContextProvider>
         </ConnectKitProvider>

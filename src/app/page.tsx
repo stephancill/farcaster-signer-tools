@@ -50,6 +50,7 @@ export default function Home() {
             },
           })
         : undefined,
+    enabled: !!fid,
   });
 
   const {
