@@ -38,9 +38,11 @@ export default function RootLayout({
           <ConnectKitProvider>
             <ConfigContextProvider>
               <BackfillContextProvider>
-                <HashRouter>
-                  <body className="p-2 md:p-10">{children}</body>
-                </HashRouter>
+                <body className="p-2 md:p-10">
+                  {typeof window !== "undefined" ? (
+                    <HashRouter>{children}</HashRouter>
+                  ) : null}
+                </body>
               </BackfillContextProvider>
             </ConfigContextProvider>
           </ConnectKitProvider>
