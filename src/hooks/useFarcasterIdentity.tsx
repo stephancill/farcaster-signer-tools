@@ -143,11 +143,12 @@ const identityReducer: Reducer<State, Action> = (state, action) => {
         signature: action.signature,
       };
 
-      const identities = state.identities
-        // Remove all current pending approvals
-        .filter((identity) => identity.status !== "pending_approval")
-        // Add new pending approval
-        .concat(identity);
+      const identities = [
+        ...state.identities.filter(
+          (identity) => identity.status !== "pending_approval"
+        ),
+        identity,
+      ];
 
       return {
         activeIdentity: identity,
