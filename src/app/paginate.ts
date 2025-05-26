@@ -32,10 +32,12 @@ export async function getAllMessagesFromHubEndpoint({
   endpoint,
   fid,
   hubUrl,
+  otherParams,
 }: {
   endpoint: string;
   fid: number;
   hubUrl: string;
+  otherParams?: Record<string, string>;
 }) {
   const messages: unknown[] = new Array();
   let nextPageToken: string | undefined;
@@ -44,6 +46,7 @@ export async function getAllMessagesFromHubEndpoint({
     const params = new URLSearchParams({
       fid: fid.toString(),
       pageSize: MAX_PAGE_SIZE.toString(),
+      ...otherParams,
     });
 
     if (nextPageToken) {
@@ -97,6 +100,9 @@ export async function getAllReactionsByFid(
     endpoint: "/v1/reactionsByFid",
     fid: fid.fid,
     hubUrl,
+    otherParams: {
+      reaction_type: "None",
+    },
   });
 
   return reactions;
