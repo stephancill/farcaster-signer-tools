@@ -9,7 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@farcaster/hub-web": "^0.9.5",
+    "@farcaster/core": "^0.17.1",
+    "@farcaster/hub-web": "^0.10.0",
     "@noble/ed25519": "^2.1.0",
     "@noble/hashes": "^1.4.0",
     "@rainbow-me/rainbowkit": "^2.1.2",

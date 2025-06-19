@@ -8,9 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@farcaster/core':
+        specifier: ^0.17.1
+        version: 0.17.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)
       '@farcaster/hub-web':
-        specifier: ^0.9.5
-        version: 0.9.7(bufferutil@4.0.9)(google-protobuf@3.21.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)
+        specifier: ^0.10.0
+        version: 0.10.0(bufferutil@4.0.9)(google-protobuf@3.21.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)
       '@noble/ed25519':
         specifier: ^2.1.0
         version: 2.2.3
@@ -331,11 +334,11 @@ packages:
     resolution: {integrity: sha512-XK6BTq1NDMo9Xqw/YkYyGjSsg44fbNwYRx7QK2CuoQgyy+f1rrTDHoExVM5PsyXCtfl2vs2vVJ0MN0yN6LppRw==}
     engines: {node: '>=14.0.0', npm: '>=6.0.0'}
 
-  '@farcaster/core@0.16.4':
-    resolution: {integrity: sha512-2yDc5kUdlODjhjjjeZXIM0HCPmNnxY1cw70LVrws1ad33WfKipfK88t54NVQ9aBukDXcoG2aWZJNXoNNsheF5w==}
+  '@farcaster/core@0.17.1':
+    resolution: {integrity: sha512-u6vySyBIn5/o+ZdcDzPc0fM7321n1R1Pu+cni54NFhFbQPO8PxHHkibPk5GDBSlBN6dBO2OhXZHwrAuOrZ9NYw==}
 
-  '@farcaster/hub-web@0.9.7':
-    resolution: {integrity: sha512-SkONhwpKVo3S6Ulp8LrlQNovBQUhe2lHWJ09KQH9MUbRMG5XbDCisFWLSYWXgDgE7k22pKV9IUunkfHoTWsd+g==}
+  '@farcaster/hub-web@0.10.0':
+    resolution: {integrity: sha512-qJuO8lNmrNbVibzUdiPNJLdphVfvS7SfdmKzvIY3oI7hbzFoFrCXMw4tXo1mv9U2Z3cRql4cBQjbgCrvAkTTng==}
 
   '@fastify/busboy@2.1.1':
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
@@ -3687,7 +3690,7 @@ snapshots:
 
   '@faker-js/faker@7.6.0': {}
 
-  '@farcaster/core@0.16.4(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)':
+  '@farcaster/core@0.17.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)':
     dependencies:
       '@faker-js/faker': 7.6.0
       '@noble/curves': 1.9.1
@@ -3701,9 +3704,9 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@farcaster/hub-web@0.9.7(bufferutil@4.0.9)(google-protobuf@3.21.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)':
+  '@farcaster/hub-web@0.10.0(bufferutil@4.0.9)(google-protobuf@3.21.4)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)':
     dependencies:
-      '@farcaster/core': 0.16.4(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)
+      '@farcaster/core': 0.17.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.28)
       '@improbable-eng/grpc-web': 0.15.0(google-protobuf@3.21.4)
       rxjs: 7.8.2
     transitivePeerDependencies:
