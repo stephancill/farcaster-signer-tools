@@ -1,5 +1,6 @@
 "use client";
 
+import { Message } from "@farcaster/hub-web";
 import { useQuery } from "@tanstack/react-query";
 import { ConnectKitButton } from "connectkit";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -7,22 +8,23 @@ import { Route, Routes, useNavigate } from "react-router-dom";
 import { twMerge } from "tailwind-merge";
 import { ActionButton } from "../components/ActionButton";
 import { AppDetail } from "../components/AppDetail";
+import { BackButton } from "../components/BackButton";
+import { DebugPage } from "../components/DebugDetail";
+import { Footer } from "../components/Footer";
 import { ImportDetail } from "../components/ImportDetail";
+import { SignerDetail } from "../components/SignerDetail";
 import { UserDataView } from "../components/UserDataView";
 import { decodeJsonData, useBackfillData } from "../context/backfillContext";
+import { useConfig } from "../context/configContext";
 import { border } from "../style/common";
-import { MessagesArchive } from "./types";
+import { MessagesArchive, SerializedMessagesArchive } from "./types";
 import {
+  downloadJsonFile,
   getFullProfileFromHub,
   getFullTime,
   signerMessagesToString,
   timeAgo,
 } from "./utils";
-import { SignerDetail } from "../components/SignerDetail";
-import { BackButton } from "../components/BackButton";
-import { DebugPage } from "../components/DebugDetail";
-import { useConfig } from "../context/configContext";
-import { Footer } from "../components/Footer";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -59,6 +61,7 @@ export default function Home() {
     messageCountsByFid,
     signersByFid,
     lastUsedByFid,
+    messagesBySigner,
     isLoading: processingIsLoading,
   } = useBackfillData(dataRaw);
 
@@ -75,6 +78,69 @@ export default function Home() {
         (lastUsedByFid?.[fidA] || new Date(0)).getTime()
     );
   }, [data]);
+
+  // TODO: Refactor this and the function in AppDetail to use a common function
+  function handleBackupAll() {
+    try {
+      const allMessagesJson = {} as SerializedMessagesArchive;
+      const backedUpSigners: string[] = [];
+      let totalFidsProcessed = 0;
+      let totalSignersProcessed = 0;
+
+      // Iterate through all FIDs and their signers
+      for (const [fid, signers] of fidToSignerSorted || []) {
+        totalFidsProcessed++;
+
+        for (const signer of signers) {
+          const messages = messagesBySigner?.[signer];
+
+          if (!messages) {
+            console.error("No messages found for signer", signer);
+            continue;
+          }
+
+          let totalMessagesFromSigner = 0;
+
+          for (const key of [
+            "casts",
+            "reactions",
+            "links",
+            "verifications",
+            "userData",
+          ] as const) {
+            const messagesToAppend = messages[key].map((m) =>
+              Message.toJSON(m)
+            );
+            allMessagesJson[key] = [
+              ...(allMessagesJson[key] || []),
+              ...messagesToAppend,
+            ];
+            totalMessagesFromSigner += messagesToAppend.length;
+          }
+
+          if (totalMessagesFromSigner > 0) {
+            backedUpSigners.push(signer);
+            totalSignersProcessed++;
+          }
+        }
+      }
+
+      allMessagesJson["signerPubKeys"] = backedUpSigners;
+
+      // Create a more descriptive filename for the comprehensive backup
+      const timestamp = new Date().toISOString();
+      const filename = `fsm-backup-${timestamp}-comprehensive-${totalFidsProcessed}fids-${totalSignersProcessed}signers.json`;
+
+      downloadJsonFile(filename, allMessagesJson);
+
+      console.log(
+        `Backup completed: ${totalFidsProcessed} FIDs, ${totalSignersProcessed} signers`
+      );
+    } catch (error) {
+      console.error(error);
+      alert("Error backing up messages");
+    }
+  }
 
   useEffect(() => {
     if (importedData) {
@@ -197,6 +263,9 @@ export default function Home() {
           <ActionButton onClick={() => refetch()}>Refresh</ActionButton>
           <ActionButton onClick={() => inputFile.current?.click()}>
             Import
+          </ActionButton>
+          <ActionButton onClick={handleBackupAll}>
+            Consolidate & Backup All
           </ActionButton>
           <ConnectKitButton></ConnectKitButton>
         </div>
